@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import math
 
 app = Flask(__name__)
+CORS(app) 
 
 @app.route('/api/hitung', methods=['POST'])
 def hitung():
+    print("masuk hitung")
     data = request.get_json()
-
+    print(data)
     mode = data.get('mode')
     angka1 = data.get('angka1')
     angka2 = data.get('angka2')
