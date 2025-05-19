@@ -1,0 +1,4 @@
+# Abaikan folder virtual environment
+.venv/
+__pycache__/
+*.pyc
