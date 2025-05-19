@@ -3,7 +3,7 @@ from flask_cors import CORS
 import math
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app)
 
 @app.route('/api/hitung', methods=['POST'])
 def hitung():
@@ -22,7 +22,7 @@ def hitung():
     except (TypeError, ValueError):
         return jsonify({'hasil': 'Input tidak valid'}), 400
 
-      if mode == '4r!tm4t!k4':
+    if mode == 'Aritmatika':
         if operator == '+':
             hasil = a + b
         elif operator == '-':
@@ -37,14 +37,14 @@ def hitung():
         else:
             hasil = 'Operator tidak dikenali'
 
-    elif mode == 'geometri':
-        if jenis_geometri == 'persegi':
+    elif mode == 'Geometri':
+        if jenis_geometri == 'Persegi':
             hasil = a * a
-        elif jenis_geometri == 'lingkaran':
+        elif jenis_geometri == 'Lingkaran':
             hasil = math.pi * a * a
-        elif jenis_geometri == 'kubus':
+        elif jenis_geometri == 'Kubus':
             hasil = a ** 3
-        elif jenis_geometri == 'bola':
+        elif jenis_geometri == 'Bola':
             hasil = (4 / 3) * math.pi * a ** 3
         else:
             hasil = 'Jenis geometri tidak dikenali'
