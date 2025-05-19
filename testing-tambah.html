@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator Penjumlahan</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 50px;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Kalkulator Penambahan Dua Angka</h2>
+  <label for="angka1">Angka Pertama:</label><br>
+  <input type="number" id="angka1" /><br>
+
+  <label for="angka2">Angka Kedua:</label><br>
+  <input type="number" id="angka2" /><br>
+
+  <button onclick="hitung()">Jumlahkan</button>
+
+  <h3>Hasil: <span id="hasil">-</span></h3>
+
+  <script>
+    function hitung() {
+      const a = parseFloat(document.getElementById('angka1').value);
+      const b = parseFloat(document.getElementById('angka2').value);
+      const hasil = a + b;
+
+      if (isNaN(hasil)) {
+        document.getElementById('hasil').textContent = "Masukkan dua angka valid!";
+      } else {
+        document.getElementById('hasil').textContent = hasil;
+      }
+    }
+  </script>
+</body>
+</html>
