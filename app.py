@@ -22,7 +22,7 @@ def hitung():
     except (TypeError, ValueError):
         return jsonify({'hasil': 'Input tidak valid'}), 400
 
-    if mode == 'Aritmatika':
+    if mode == 'aritmatika':
         if operator == '+':
             hasil = a + b
         elif operator == '-':
@@ -37,7 +37,7 @@ def hitung():
         else:
             hasil = 'Operator tidak dikenali'
 
-    elif mode == 'Geometri':
+    elif mode == 'geometri':
         if jenis_geometri == 'Persegi':
             hasil = a * a
         elif jenis_geometri == 'Lingkaran':
