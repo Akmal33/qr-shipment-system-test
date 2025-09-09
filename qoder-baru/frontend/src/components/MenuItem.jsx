@@ -39,9 +39,9 @@ function MenuItem({ item, formatPrice }) {
   };
   
   return (
-    <div className=\"menu-item\">
+    <div className="menu-item">
       {/* Item Image */}
-      <div className=\"item-image\">
+      <div className="item-image\">
         {item.image_url ? (
           <img 
             src={item.image_url} 
@@ -52,41 +52,41 @@ function MenuItem({ item, formatPrice }) {
             }}
           />
         ) : null}
-        <div className=\"image-placeholder\" style={{display: item.image_url ? 'none' : 'flex'}}>
+        <div className="image-placeholder\" style={{display: item.image_url ? 'none' : 'flex'}}>
           🍽️
         </div>
       </div>
       
       {/* Item Details */}
-      <div className=\"item-details\">
-        <h3 className=\"item-name\">{item.name}</h3>
-        <p className=\"item-description\">{item.description}</p>
-        <div className=\"item-price\">{formatPrice(item.price)}</div>
+      <div className="item-details\">
+        <h3 className="item-name\">{item.name}</h3>
+        <p className="item-description\">{item.description}</p>
+        <div className="item-price\">{formatPrice(item.price)}</div>
         
         {/* Availability Status */}
         {!item.available && (
-          <div className=\"unavailable-badge\">Currently Unavailable</div>
+          <div className="unavailable-badge\">Currently Unavailable</div>
         )}
       </div>
       
       {/* Add to Cart Section */}
       {item.available && (
-        <div className=\"add-to-cart-section\">
+        <div className="add-to-cart-section\">
           {/* Quantity Selector */}
-          <div className=\"quantity-selector\">
+          <div className="quantity-selector\">
             <button 
-              type=\"button\"
+              type="button\"
               onClick={decrementQuantity}
-              className=\"quantity-btn\"
+              className="quantity-btn\"
               disabled={quantity <= 1}
             >
               -
             </button>
-            <span className=\"quantity-display\">{quantity}</span>
+            <span className="quantity-display\">{quantity}</span>
             <button 
-              type=\"button\"
+              type="button\"
               onClick={incrementQuantity}
-              className=\"quantity-btn\"
+              className="quantity-btn\"
               disabled={quantity >= 10}
             >
               +
@@ -95,7 +95,7 @@ function MenuItem({ item, formatPrice }) {
           
           {/* Notes Toggle */}
           <button 
-            type=\"button\"
+            type="button\"
             onClick={() => setShowNotes(!showNotes)}
             className={`notes-toggle ${showNotes ? 'active' : ''}`}
           >
@@ -104,16 +104,16 @@ function MenuItem({ item, formatPrice }) {
           
           {/* Notes Input */}
           {showNotes && (
-            <div className=\"notes-section\">
+            <div className="notes-section\">
               <textarea
-                placeholder=\"Special instructions (e.g., extra spicy, no onions)...\"
+                placeholder="Special instructions (e.g., extra spicy, no onions)...\"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={200}
-                className=\"notes-input\"
+                className="notes-input\"
                 rows={3}
               />
-              <div className=\"character-count\">
+              <div className="character-count\">
                 {notes.length}/200
               </div>
             </div>
@@ -127,7 +127,7 @@ function MenuItem({ item, formatPrice }) {
           >
             {isAdding ? (
               <>
-                <span className=\"adding-spinner\"></span>
+                <span className="adding-spinner\"></span>
                 Adding...
               </>
             ) : (

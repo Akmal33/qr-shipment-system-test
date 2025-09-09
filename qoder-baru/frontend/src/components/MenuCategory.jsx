@@ -14,11 +14,11 @@ function MenuCategory({ category, isActive, onClick, itemCount }) {
       className={`menu-category ${isActive ? 'active' : ''}`}
       onClick={() => onClick(category)}
     >
-      <span className=\"category-name\">
+      <span className="category-name">
         {formatCategoryName(category)}
       </span>
       {itemCount !== undefined && (
-        <span className=\"item-count\">({itemCount})</span>
+        <span className="item-count">({itemCount})</span>
       )}
     </button>
   );
