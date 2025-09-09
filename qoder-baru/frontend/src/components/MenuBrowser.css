@@ -1,0 +1,252 @@
+.menu-browser {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding-bottom: 80px; /* Space for mobile cart button */
+}
+
+.menu-browser.loading,
+.menu-browser.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e3e3e3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header */
+.menu-header {
+  background: white;
+  padding: 15px 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.table-info h1 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.table-info p {
+  margin: 5px 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.cart-toggle {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cart-toggle:hover {
+  background: #0056b3;
+}
+
+/* Search Section */
+.search-section {
+  padding: 15px 20px;
+  background: white;
+  border-bottom: 1px solid #eee;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #ddd;
+  border-radius: 25px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #007bff;
+}
+
+/* Category Tabs */
+.category-tabs {
+  display: flex;
+  background: white;
+  padding: 0 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 76px; /* Below header */
+  z-index: 90;
+}
+
+.category-tab {
+  white-space: nowrap;
+  padding: 15px 20px;
+  border: none;
+  background: none;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  min-width: fit-content;
+}
+
+.category-tab:hover {
+  color: #007bff;
+}
+
+.category-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  font-weight: 600;
+}
+
+/* Menu Content */
+.menu-content {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+  padding: 20px;
+}
+
+.menu-items {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.no-items {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+/* Cart Sidebar */
+.cart-sidebar {
+  width: 350px;
+  position: sticky;
+  top: 140px; /* Below header and tabs */
+  height: fit-content;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+/* Mobile Cart Button */
+.mobile-cart-button {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: none;
+}
+
+.mobile-cart-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+  transition: all 0.3s;
+}
+
+.mobile-cart-btn:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .menu-content {
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  .menu-items {
+    grid-template-columns: 1fr;
+  }
+  
+  .cart-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    background: white;
+    z-index: 1000;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .mobile-cart-button {
+    display: block;
+  }
+  
+  .cart-toggle {
+    display: none;
+  }
+  
+  .category-tabs {
+    top: 60px; /* Adjust for mobile header */
+  }
+  
+  .menu-header {
+    padding: 10px 15px;
+  }
+  
+  .table-info h1 {
+    font-size: 1.2rem;
+  }
+  
+  .search-section {
+    padding: 10px 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-tab {
+    padding: 12px 15px;
+    font-size: 0.8rem;
+  }
+  
+  .menu-content {
+    padding: 10px;
+  }
+  
+  .menu-items {
+    gap: 15px;
+  }
+}
