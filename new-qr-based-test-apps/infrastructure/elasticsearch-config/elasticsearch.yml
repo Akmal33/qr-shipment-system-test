@@ -1,0 +1,21 @@
+cluster.name: "warehouse-elasticsearch-cluster"
+node.name: "warehouse-node-1"
+network.host: 0.0.0.0
+
+# Disable X-Pack security for development
+xpack.security.enabled: false
+xpack.monitoring.collection.enabled: false
+
+# Memory settings
+bootstrap.memory_lock: false
+
+# Discovery settings for single node
+discovery.type: single-node
+
+# Index settings
+action.destructive_requires_name: true
+action.auto_create_index: "+warehouse-*,-*"
+
+# Performance settings
+thread_pool.search.queue_size: 1000
+thread_pool.write.queue_size: 1000

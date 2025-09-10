@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: warehouse-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: warehouse123
+      MONGO_INITDB_DATABASE: warehouse_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./infrastructure/mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: warehouse-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Apache Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: warehouse-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: warehouse-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Kafka UI for management
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: warehouse-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: warehouse-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: warehouse-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Dashboard API Service
+  dashboard-api:
+    build:
+      context: ./services/dashboard-api
+      dockerfile: Dockerfile
+    container_name: warehouse-dashboard-api
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGODB_URI=mongodb://admin:warehouse123@mongodb:27017/warehouse_db?authSource=admin
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - KAFKA_BROKERS=kafka:29092
+      - REDIS_URL=redis://redis:6379
+      - PORT=8001
+    depends_on:
+      - mongodb
+      - elasticsearch
+      - kafka
+      - redis
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Barcode Service
+  barcode-service:
+    build:
+      context: ./services/barcode-service
+      dockerfile: Dockerfile
+    container_name: warehouse-barcode-service
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGODB_URI=mongodb://admin:warehouse123@mongodb:27017/warehouse_db?authSource=admin
+      - KAFKA_BROKERS=kafka:29092
+      - PORT=8002
+    depends_on:
+      - mongodb
+      - kafka
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Scanner API Service
+  scanner-api:
+    build:
+      context: ./services/scanner-api
+      dockerfile: Dockerfile
+    container_name: warehouse-scanner-api
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGODB_URI=mongodb://admin:warehouse123@mongodb:27017/warehouse_db?authSource=admin
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - KAFKA_BROKERS=kafka:29092
+      - PORT=8003
+    depends_on:
+      - mongodb
+      - elasticsearch
+      - kafka
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  # Dashboard Frontend
+  dashboard-frontend:
+    build:
+      context: ./dashboard-frontend
+      dockerfile: Dockerfile
+    container_name: warehouse-dashboard-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_BARCODE_SERVICE_URL=http://localhost:8002
+    depends_on:
+      - dashboard-api
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  elasticsearch_data:
+
+networks:
+  warehouse-network:
+    driver: bridge

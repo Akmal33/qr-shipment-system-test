@@ -1,0 +1,407 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  MONGODB_URI: mongodb://admin:warehouse123@localhost:27017/warehouse_test_db?authSource=admin
+  ELASTICSEARCH_URL: http://localhost:9200
+  KAFKA_BROKERS: localhost:9092
+  REDIS_URL: redis://localhost:6379
+
+jobs:
+  # Backend Unit Tests
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: warehouse123
+        ports:
+          - 27017:27017
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+          
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        ports:
+          - 9200:9200
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies - Dashboard API
+      run: |
+        cd services/dashboard-api
+        go mod download
+        go mod tidy
+    
+    - name: Install dependencies - Barcode Service
+      run: |
+        cd services/barcode-service
+        go mod download
+        go mod tidy
+    
+    - name: Install dependencies - Scanner API
+      run: |
+        cd services/scanner-api
+        go mod download
+        go mod tidy
+    
+    - name: Run Dashboard API Tests
+      run: |
+        cd services/dashboard-api
+        go test ./... -v -coverprofile=coverage.out
+        go tool cover -func=coverage.out
+    
+    - name: Run Barcode Service Tests
+      run: |
+        cd services/barcode-service
+        go test ./... -v -coverprofile=coverage.out
+        go tool cover -func=coverage.out
+    
+    - name: Run Scanner API Tests
+      run: |
+        cd services/scanner-api
+        go test ./... -v -coverprofile=coverage.out
+        go tool cover -func=coverage.out
+
+  # Frontend Tests
+  frontend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: dashboard-frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd dashboard-frontend
+        npm ci
+    
+    - name: Run frontend tests
+      run: |
+        cd dashboard-frontend
+        npm test -- --coverage --watchAll=false
+    
+    - name: Build frontend
+      run: |
+        cd dashboard-frontend
+        npm run build
+
+  # Mobile App Tests
+  mobile-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.13.0'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      run: |
+        cd mobile-scanner
+        flutter pub get
+    
+    - name: Run Flutter tests
+      run: |
+        cd mobile-scanner
+        flutter test
+    
+    - name: Build APK
+      run: |
+        cd mobile-scanner
+        flutter build apk --release
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: warehouse123
+        ports:
+          - 27017:27017
+      
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        ports:
+          - 9200:9200
+          
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.4.0
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+        ports:
+          - 2181:2181
+          
+      kafka:
+        image: confluentinc/cp-kafka:7.4.0
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        ports:
+          - 9092:9092
+          
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Install test dependencies
+      run: |
+        npm install -g jest supertest axios
+    
+    - name: Wait for services
+      run: |
+        sleep 30
+        curl -f http://localhost:9200/_cluster/health || exit 1
+    
+    - name: Build and start backend services
+      run: |
+        # Start services in background
+        cd services/dashboard-api && go run . &
+        cd services/barcode-service && go run . &
+        cd services/scanner-api && go run . &
+        sleep 15
+    
+    - name: Run integration tests
+      run: |
+        cd tests/integration
+        jest system_integration_test.js --detectOpenHandles
+
+  # End-to-End Tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install E2E test dependencies
+      run: |
+        npm install -g puppeteer jest
+    
+    - name: Start complete system with Docker Compose
+      run: |
+        docker-compose up -d
+        sleep 60
+    
+    - name: Check system health
+      run: |
+        curl -f http://localhost:8001/health || echo "Dashboard API not ready"
+        curl -f http://localhost:8002/health || echo "Barcode Service not ready"
+        curl -f http://localhost:8003/health || echo "Scanner API not ready"
+        curl -f http://localhost:3000 || echo "Frontend not ready"
+    
+    - name: Run E2E tests
+      run: |
+        cd tests/e2e
+        jest dashboard_e2e_test.js --detectOpenHandles
+    
+    - name: Cleanup
+      if: always()
+      run: |
+        docker-compose down
+
+  # Performance Tests
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install Artillery
+      run: npm install -g artillery
+    
+    - name: Start system
+      run: |
+        docker-compose up -d
+        sleep 60
+    
+    - name: Run performance tests
+      run: |
+        cd tests/performance
+        artillery run load_test.js --output performance-report.json
+        artillery report performance-report.json --output performance-report.html
+    
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: tests/performance/performance-report.html
+    
+    - name: Cleanup
+      if: always()
+      run: |
+        docker-compose down
+
+  # Build and Push Docker Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, integration-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Build and push Dashboard API
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/dashboard-api
+        push: true
+        tags: |
+          warehouse/dashboard-api:latest
+          warehouse/dashboard-api:${{ github.sha }}
+    
+    - name: Build and push Barcode Service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/barcode-service
+        push: true
+        tags: |
+          warehouse/barcode-service:latest
+          warehouse/barcode-service:${{ github.sha }}
+    
+    - name: Build and push Scanner API
+      uses: docker/build-push-action@v4
+      with:
+        context: ./services/scanner-api
+        push: true
+        tags: |
+          warehouse/scanner-api:latest
+          warehouse/scanner-api:${{ github.sha }}
+    
+    - name: Build and push Frontend
+      uses: docker/build-push-action@v4
+      with:
+        context: ./dashboard-frontend
+        push: true
+        tags: |
+          warehouse/dashboard-frontend:latest
+          warehouse/dashboard-frontend:${{ github.sha }}
+
+  # Deploy to Staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add actual deployment commands here
+        # kubectl apply -f k8s/staging/
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests on staging..."
+        # Add smoke test commands
+
+  # Deploy to Production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add actual production deployment commands
+        # kubectl apply -f k8s/production/
+    
+    - name: Run production smoke tests
+      run: |
+        echo "Running production smoke tests..."
+        # Add production smoke tests
+    
+    - name: Notify deployment success
+      run: |
+        echo "Production deployment completed successfully!"
+        # Add notification logic (Slack, email, etc.)

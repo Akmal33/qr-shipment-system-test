@@ -1,0 +1,64 @@
+name: warehouse_scanner
+description: Mobile barcode scanner for warehouse management system
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP requests
+  http: ^1.1.0
+  
+  # QR/Barcode scanning
+  qr_code_scanner: ^1.0.1
+  mobile_scanner: ^3.5.2
+  
+  # Permissions
+  permission_handler: ^11.0.1
+  
+  # Local storage
+  shared_preferences: ^2.2.2
+  
+  # State management
+  provider: ^6.0.5
+  
+  # UI components
+  cupertino_icons: ^1.0.2
+  
+  # JSON handling
+  json_annotation: ^4.8.1
+  
+  # Device info
+  device_info_plus: ^9.1.0
+  
+  # Connectivity
+  connectivity_plus: ^5.0.1
+  
+  # Audio feedback
+  audioplayers: ^5.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/sounds/
+  
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+        - asset: fonts/Roboto-Bold.ttf
+          weight: 700

@@ -1,0 +1,233 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-api
+  labels:
+    app: dashboard-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dashboard-api
+  template:
+    metadata:
+      labels:
+        app: dashboard-api
+    spec:
+      containers:
+      - name: dashboard-api
+        image: warehouse/dashboard-api:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-secrets
+              key: mongodb-uri
+        - name: ELASTICSEARCH_URL
+          value: "http://elasticsearch:9200"
+        - name: KAFKA_BROKERS
+          value: "kafka:9092"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-api-service
+spec:
+  selector:
+    app: dashboard-api
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: barcode-service
+  labels:
+    app: barcode-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: barcode-service
+  template:
+    metadata:
+      labels:
+        app: barcode-service
+    spec:
+      containers:
+      - name: barcode-service
+        image: warehouse/barcode-service:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-secrets
+              key: mongodb-uri
+        - name: KAFKA_BROKERS
+          value: "kafka:9092"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: barcode-service-service
+spec:
+  selector:
+    app: barcode-service
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scanner-api
+  labels:
+    app: scanner-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: scanner-api
+  template:
+    metadata:
+      labels:
+        app: scanner-api
+    spec:
+      containers:
+      - name: scanner-api
+        image: warehouse/scanner-api:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-secrets
+              key: mongodb-uri
+        - name: ELASTICSEARCH_URL
+          value: "http://elasticsearch:9200"
+        - name: KAFKA_BROKERS
+          value: "kafka:9092"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scanner-api-service
+spec:
+  selector:
+    app: scanner-api
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-frontend
+  labels:
+    app: dashboard-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dashboard-frontend
+  template:
+    metadata:
+      labels:
+        app: dashboard-frontend
+    spec:
+      containers:
+      - name: dashboard-frontend
+        image: warehouse/dashboard-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://dashboard-api-service:8001"
+        - name: REACT_APP_BARCODE_SERVICE_URL
+          value: "http://barcode-service-service:8002"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-frontend-service
+spec:
+  selector:
+    app: dashboard-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer

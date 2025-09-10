@@ -1,0 +1,240 @@
+# Ingress configuration for Warehouse Management System
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: warehouse-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - warehouse.company.com
+    - api.warehouse.company.com
+    secretName: warehouse-tls
+  rules:
+  - host: warehouse.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-frontend-service
+            port:
+              number: 80
+  - host: api.warehouse.company.com
+    http:
+      paths:
+      - path: /api/v1/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-api-service
+            port:
+              number: 8001
+      - path: /api/v1/inventory
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-api-service
+            port:
+              number: 8001
+      - path: /api/v1/shipments
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-api-service
+            port:
+              number: 8001
+      - path: /api/v1/analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: dashboard-api-service
+            port:
+              number: 8001
+      - path: /api/v1/barcode
+        pathType: Prefix
+        backend:
+          service:
+            name: barcode-service-service
+            port:
+              number: 8002
+      - path: /api/v1/scan
+        pathType: Prefix
+        backend:
+          service:
+            name: scanner-api-service
+            port:
+              number: 8003
+
+---
+# Network Policies for Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: warehouse-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: dashboard-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: dashboard-frontend
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8001
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - protocol: TCP
+      port: 27017
+  - to:
+    - podSelector:
+        matchLabels:
+          app: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+  - to:
+    - podSelector:
+        matchLabels:
+          app: elasticsearch
+    ports:
+    - protocol: TCP
+      port: 9200
+
+---
+# HorizontalPodAutoscaler for API services
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: dashboard-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dashboard-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: barcode-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: barcode-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: scanner-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: scanner-api
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+---
+# ServiceMonitor for Prometheus monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: warehouse-services
+  labels:
+    app: warehouse
+spec:
+  selector:
+    matchLabels:
+      monitoring: "true"
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+
+---
+# PodDisruptionBudget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dashboard-api-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dashboard-api
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: barcode-service-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: barcode-service
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: scanner-api-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: scanner-api
