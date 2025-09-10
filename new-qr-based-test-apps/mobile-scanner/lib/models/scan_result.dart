@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'scan_result.g.dart';
-
-@JsonSerializable()
 class ScanResult {
   final String scanId;
   final String userId;
@@ -28,13 +23,39 @@ class ScanResult {
     this.itemInfo,
   });
 
-  factory ScanResult.fromJson(Map<String, dynamic> json) => 
-      _$ScanResultFromJson(json);
+  factory ScanResult.fromJson(Map<String, dynamic> json) {
+    return ScanResult(
+      scanId: json['scanId'] as String,
+      userId: json['userId'] as String,
+      itemId: json['itemId'] as String?,
+      scanType: json['scanType'] as String,
+      result: json['result'] as String,
+      location: json['location'] as String,
+      deviceId: json['deviceId'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      errorMsg: json['errorMsg'] as String?,
+      itemInfo: json['itemInfo'] != null
+          ? ItemInfo.fromJson(json['itemInfo'] as Map<String, dynamic>)
+          : null,
+    );
+  }
   
-  Map<String, dynamic> toJson() => _$ScanResultToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'scanId': scanId,
+      'userId': userId,
+      'itemId': itemId,
+      'scanType': scanType,
+      'result': result,
+      'location': location,
+      'deviceId': deviceId,
+      'timestamp': timestamp.toIso8601String(),
+      'errorMsg': errorMsg,
+      'itemInfo': itemInfo?.toJson(),
+    };
+  }
 }
 
-@JsonSerializable()
 class ItemInfo {
   final String itemId;
   final String name;
@@ -54,13 +75,31 @@ class ItemInfo {
     required this.status,
   });
 
-  factory ItemInfo.fromJson(Map<String, dynamic> json) => 
-      _$ItemInfoFromJson(json);
+  factory ItemInfo.fromJson(Map<String, dynamic> json) {
+    return ItemInfo(
+      itemId: json['itemId'] as String,
+      name: json['name'] as String,
+      category: json['category'] as String,
+      sellingPrice: (json['sellingPrice'] as num).toDouble(),
+      stockLevel: json['stockLevel'] as int,
+      warehouseLocation: json['warehouseLocation'] as String,
+      status: json['status'] as String,
+    );
+  }
   
-  Map<String, dynamic> toJson() => _$ItemInfoToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'itemId': itemId,
+      'name': name,
+      'category': category,
+      'sellingPrice': sellingPrice,
+      'stockLevel': stockLevel,
+      'warehouseLocation': warehouseLocation,
+      'status': status,
+    };
+  }
 }
 
-@JsonSerializable()
 class User {
   final String userId;
   final String username;
@@ -78,12 +117,29 @@ class User {
     required this.isActive,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      userId: json['userId'] as String,
+      username: json['username'] as String,
+      email: json['email'] as String,
+      role: json['role'] as String,
+      accessLevel: json['accessLevel'] as String,
+      isActive: json['isActive'] as bool,
+    );
+  }
   
-  Map<String, dynamic> toJson() => _$UserToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'username': username,
+      'email': email,
+      'role': role,
+      'accessLevel': accessLevel,
+      'isActive': isActive,
+    };
+  }
 }
 
-@JsonSerializable()
 class ScanRequest {
   final String barcode;
   final String scanType;
@@ -97,13 +153,25 @@ class ScanRequest {
     required this.deviceId,
   });
 
-  factory ScanRequest.fromJson(Map<String, dynamic> json) => 
-      _$ScanRequestFromJson(json);
+  factory ScanRequest.fromJson(Map<String, dynamic> json) {
+    return ScanRequest(
+      barcode: json['barcode'] as String,
+      scanType: json['scanType'] as String,
+      location: json['location'] as String,
+      deviceId: json['deviceId'] as String,
+    );
+  }
   
-  Map<String, dynamic> toJson() => _$ScanRequestToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'barcode': barcode,
+      'scanType': scanType,
+      'location': location,
+      'deviceId': deviceId,
+    };
+  }
 }
 
-@JsonSerializable()
 class ValidationResponse {
   final bool isValid;
   final String message;
@@ -117,8 +185,25 @@ class ValidationResponse {
     this.userInfo,
   });
 
-  factory ValidationResponse.fromJson(Map<String, dynamic> json) => 
-      _$ValidationResponseFromJson(json);
+  factory ValidationResponse.fromJson(Map<String, dynamic> json) {
+    return ValidationResponse(
+      isValid: json['isValid'] as bool,
+      message: json['message'] as String,
+      itemInfo: json['itemInfo'] != null
+          ? ItemInfo.fromJson(json['itemInfo'] as Map<String, dynamic>)
+          : null,
+      userInfo: json['userInfo'] != null
+          ? User.fromJson(json['userInfo'] as Map<String, dynamic>)
+          : null,
+    );
+  }
   
-  Map<String, dynamic> toJson() => _$ValidationResponseToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'isValid': isValid,
+      'message': message,
+      'itemInfo': itemInfo?.toJson(),
+      'userInfo': userInfo?.toJson(),
+    };
+  }
 }

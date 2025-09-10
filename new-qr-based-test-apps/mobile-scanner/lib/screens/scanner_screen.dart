@@ -79,9 +79,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
         actions: [
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
-              return PopupMenuButton(
+              return PopupMenuButton<String>(
                 itemBuilder: (context) => [
-                  PopupMenuItem(
+                  PopupMenuItem<String>(
                     child: Row(
                       children: [
                         Icon(Icons.person, color: Colors.grey[600]),
@@ -91,7 +91,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     ),
                   ),
                   const PopupMenuDivider(),
-                  PopupMenuItem(
+                  PopupMenuItem<String>(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -141,13 +141,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _buildScannerOverlay() {
     return Container(
-      decoration: ShapeDecoration(
-        shape: QrScannerOverlayShape(
-          borderColor: Theme.of(context).primaryColor,
-          borderRadius: 10,
-          borderLength: 30,
-          borderWidth: 8,
-          cutOutSize: 250,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+      ),
+      child: Center(
+        child: Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).primaryColor,
+              width: 3,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );

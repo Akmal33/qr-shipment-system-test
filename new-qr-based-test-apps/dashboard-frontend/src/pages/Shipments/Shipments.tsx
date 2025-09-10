@@ -10,12 +10,11 @@ import {
   DialogActions,
   Grid,
   Chip,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
   IconButton,
   Alert,
 } from '@mui/material';
@@ -278,24 +277,26 @@ const Shipments: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   Delivery Timeline
                 </Typography>
-                <Timeline>
+                <List>
                   {timelineItems.map((item, index) => (
-                    <TimelineItem key={index}>
-                      <TimelineSeparator>
-                        <TimelineDot 
-                          color={item.status === 'completed' ? 'success' : 'grey'}
+                    <React.Fragment key={index}>
+                      <ListItem>
+                        <ListItemIcon>
+                          {item.status === 'completed' ? (
+                            <DeliveredIcon color="success" />
+                          ) : (
+                            <PendingIcon color="disabled" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.title}
+                          secondary={item.time}
                         />
-                        {index < timelineItems.length - 1 && <TimelineConnector />}
-                      </TimelineSeparator>
-                      <TimelineContent>
-                        <Typography variant="subtitle2">{item.title}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {item.time}
-                        </Typography>
-                      </TimelineContent>
-                    </TimelineItem>
+                      </ListItem>
+                      {index < timelineItems.length - 1 && <Divider />}
+                    </React.Fragment>
                   ))}
-                </Timeline>
+                </List>
               </Grid>
             </Grid>
           )}
